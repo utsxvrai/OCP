@@ -104,7 +104,14 @@ function TrackComplaint() {
             <div className="mb-6 flex justify-between items-start">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">{complaint.title}</h2>
-                <p className="text-gray-500 mt-1">Complaint ID: {complaint.complaintId}</p>
+                <p className="text-gray-500 mt-1">
+                  Complaint ID: <a 
+                    href={`/complaints/track/${complaint.complaintId}`} 
+                    className="text-primary hover:text-primary-dark hover:underline"
+                  >
+                    {complaint.complaintId}
+                  </a>
+                </p>
                 <p className="text-gray-500">Filed on: {formatDate(complaint.createdAt)}</p>
               </div>
               <div className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusBadgeColor(complaint.status)}`}>

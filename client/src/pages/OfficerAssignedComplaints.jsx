@@ -174,7 +174,12 @@ function OfficerAssignedComplaints() {
               {filteredComplaints.map((complaint) => (
                 <tr key={complaint.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
-                    {complaint.complaint_id}
+                    <Link 
+                      to={`/complaints/${complaint.id}`}
+                      className="hover:underline"
+                    >
+                      {complaint.complaint_id}
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {complaint.title}

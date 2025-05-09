@@ -106,6 +106,18 @@ router.get('/:id', auth, async (req, res) => {
     // Get base URL from request
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     
+    // If user is an officer, get the officer ID
+    if (req.user.role === 'officer') {
+      const officer = await Officer.findByUserId(req.user.id);
+      
+      if (officer) {
+        // Add officer ID to request user object for authorization check
+        req.user.officerId = officer.id;
+      } else {
+        console.log(`Warning: User ${req.user.id} has officer role but no officer profile found`);
+      }
+    }
+    
     // Use the new method to get complaint with full attachment URL
     const complaint = await Complaint.findByIdWithFullAttachment(req.params.id, baseUrl);
     
@@ -135,6 +147,41 @@ router.get('/:id', auth, async (req, res) => {
     res.json({ complaint, updates, feedback });
   } catch (error) {
     console.error('Get complaint error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete complaint (citizen or admin only)
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    // Get complaint
+    const complaint = await Complaint.findById(req.params.id);
+    
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+    
+    // Check authorization: only the citizen who created it or an admin can delete
+    if (complaint.citizen_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this complaint' });
+    }
+    
+    // Check if complaint can be deleted (only pending, assigned or if admin)
+    const canDelete = req.user.role === 'admin' || 
+      ['pending', 'assigned'].includes(complaint.status);
+      
+    if (!canDelete) {
+      return res.status(400).json({ 
+        message: 'Cannot delete a complaint that is already in progress or resolved. Please contact the administrator.' 
+      });
+    }
+    
+    // Delete the complaint
+    await Complaint.delete(req.params.id);
+    
+    res.json({ message: 'Complaint deleted successfully' });
+  } catch (error) {
+    console.error('Delete complaint error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -207,6 +254,9 @@ router.put('/:id/status', auth, isOfficer, async (req, res) => {
       return res.status(404).json({ message: 'Officer profile not found' });
     }
     
+    // Add officer ID to request user object for consistency
+    req.user.officerId = officer.id;
+    
     // Check if the complaint is assigned to this officer
     if (complaint.officer_id !== officer.id) {
       return res.status(403).json({ message: 'Not authorized to update this complaint' });
@@ -260,6 +310,9 @@ router.post('/:id/updates', auth, isOfficer, async (req, res) => {
     if (!officer) {
       return res.status(404).json({ message: 'Officer profile not found' });
     }
+    
+    // Add officer ID to request user object for consistency
+    req.user.officerId = officer.id;
     
     // Check if the complaint is assigned to this officer
     if (complaint.officer_id !== officer.id) {

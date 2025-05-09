@@ -13,6 +13,8 @@ function ComplaintDetails() {
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingComplaint, setDeletingComplaint] = useState(false);
   
   // For new update form
   const [updateText, setUpdateText] = useState('');
@@ -38,7 +40,15 @@ function ComplaintDetails() {
       setFeedback(response.data.feedback);
     } catch (err) {
       console.error('Error fetching complaint details:', err);
-      setError('Failed to load complaint details. Please try again later.');
+      
+      // Check if it's an authorization error
+      if (err.response && err.response.status === 403) {
+        setError('You are not authorized to view this complaint. Officers can only view complaints assigned to them.');
+      } else if (err.response && err.response.status === 404) {
+        setError('Complaint not found. It may have been deleted or the ID is incorrect.');
+      } else {
+        setError('Failed to load complaint details. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
@@ -103,6 +113,20 @@ function ComplaintDetails() {
     }
   };
   
+  const handleDeleteComplaint = async () => {
+    try {
+      setDeletingComplaint(true);
+      await complaintAPI.deleteComplaint(id);
+      setShowDeleteModal(false);
+      navigate('/dashboard', { state: { message: 'Complaint deleted successfully' } });
+    } catch (err) {
+      console.error('Error deleting complaint:', err);
+      setError('Failed to delete complaint. Please try again later.');
+      setShowDeleteModal(false);
+      setDeletingComplaint(false);
+    }
+  };
+  
   // Function to format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
@@ -141,16 +165,34 @@ function ComplaintDetails() {
   
   if (error) {
     return (
-      <div className="container py-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+      <div className="container py-8 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-md shadow-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-4 rounded mb-4">
+            <h2 className="text-xl font-semibold mb-2">Error Loading Complaint</h2>
+            <p>{error}</p>
+          </div>
+          <div className="flex justify-between mt-4">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="text-primary hover:text-primary-dark flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Go Back
+            </button>
+            {user?.role === 'officer' && (
+              <Link to="/officer/my-complaints" className="text-primary hover:text-primary-dark">
+                View My Assigned Complaints
+              </Link>
+            )}
+            {user?.role === 'citizen' && (
+              <Link to="/dashboard" className="text-primary hover:text-primary-dark">
+                Back to Dashboard
+              </Link>
+            )}
+          </div>
         </div>
-        <button 
-          onClick={() => navigate(-1)} 
-          className="text-primary hover:text-primary-dark"
-        >
-          &larr; Go Back
-        </button>
       </div>
     );
   }
@@ -175,6 +217,7 @@ function ComplaintDetails() {
     !feedback;
   const canReopen = user?.id === complaint.citizen_id && 
     (complaint.status === 'resolved' || complaint.status === 'closed');
+  const canDelete = user?.id === complaint.citizen_id || user?.role === 'admin';
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -187,9 +230,23 @@ function ComplaintDetails() {
                 Complaint ID: <span className="font-medium">{complaint.complaint_id}</span>
               </p>
             </div>
-            <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusBadgeColor(complaint.status)}`}>
-              {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
-            </span>
+            <div className="flex items-center">
+              <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusBadgeColor(complaint.status)}`}>
+                {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
+              </span>
+              
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="ml-3 text-red-600 hover:text-red-800 flex items-center"
+                  title="Delete Complaint"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -556,6 +613,42 @@ function ComplaintDetails() {
           </Link>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Delete Complaint</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this complaint? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded"
+                disabled={deletingComplaint}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteComplaint}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                disabled={deletingComplaint}
+              >
+                {deletingComplaint ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

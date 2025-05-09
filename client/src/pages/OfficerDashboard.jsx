@@ -3,6 +3,8 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { complaintAPI, officerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import OfficerAssignedComplaints from './OfficerAssignedComplaints';
+import OfficerProfile from './OfficerProfile';
+import OfficerReports from './OfficerReports';
 
 function OfficerDashboard() {
   const { user } = useAuth();
@@ -235,6 +237,7 @@ function OfficerDashboard() {
 
 function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchComplaints }) {
   const navigate = useNavigate();
+  const [statusMessage, setStatusMessage] = useState('');
   
   // Stats calculation
   const totalComplaints = complaints.length;
@@ -242,18 +245,36 @@ function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchCompla
   const inProgressComplaints = complaints.filter(c => c.status === 'in-progress' || c.status === 'processing').length;
   const resolvedComplaints = complaints.filter(c => c.status === 'resolved' || c.status === 'closed').length;
   
+  // Clear status message after 3 seconds
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => {
+        setStatusMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage]);
+  
   // View complaint details
   const viewComplaint = (id) => {
     navigate(`/complaints/${id}`);
   };
   
   // Update complaint status quickly
-  const updateComplaintStatus = async (complaintId, newStatus, details = '') => {
+  const updateComplaintStatus = async (complaintId, newStatus) => {
     try {
-      await complaintAPI.updateStatus(complaintId, newStatus, details);
+      // Ask for details if not "processing" status
+      let statusDetails = '';
+      if (newStatus !== 'processing') {
+        statusDetails = prompt(`Please provide details for status change to ${newStatus.toUpperCase()}`);
+      }
+      
+      await complaintAPI.updateStatus(complaintId, newStatus, statusDetails);
+      setStatusMessage(`Complaint status updated to ${newStatus.toUpperCase()}`);
       fetchComplaints();
     } catch (err) {
       console.error('Failed to update status:', err);
+      setStatusMessage('Failed to update status. Please try again.');
     }
   };
 
@@ -265,6 +286,12 @@ function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchCompla
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
             {error}
+          </div>
+        )}
+        
+        {statusMessage && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 animate-fade-in-out">
+            {statusMessage}
           </div>
         )}
         
@@ -342,7 +369,12 @@ function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchCompla
                 {complaints.map((complaint) => (
                   <tr key={complaint.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {complaint.complaint_id}
+                      <Link 
+                        to={`/complaints/${complaint.id}`}
+                        className="text-primary hover:text-primary-dark hover:underline"
+                      >
+                        {complaint.complaint_id}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {complaint.title}
@@ -378,24 +410,18 @@ function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchCompla
                           onChange={(e) => {
                             if (e.target.value) {
                               updateComplaintStatus(complaint.id, e.target.value);
+                              e.target.value = ""; // Reset after selection
                             }
                           }}
                           className="text-sm border border-gray-300 rounded px-2 py-1"
                           value=""
                         >
                           <option value="">Update Status</option>
-                          {complaint.status !== 'processing' && 
-                            <option value="processing">Mark Processing</option>
-                          }
-                          {complaint.status !== 'in-progress' && 
-                            <option value="in-progress">Mark In Progress</option>
-                          }
-                          {complaint.status !== 'resolved' && 
-                            <option value="resolved">Mark Resolved</option>
-                          }
-                          {complaint.status !== 'closed' && 
-                            <option value="closed">Close Complaint</option>
-                          }
+                          <option value="assigned">Assigned</option>
+                          <option value="processing">Processing</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
                         </select>
                       </div>
                     </td>
@@ -411,24 +437,6 @@ function OfficerHome({ complaints, error, getStatusBadgeColor, user, fetchCompla
         )}
       </div>
     </>
-  );
-}
-
-function OfficerProfile() {
-  return (
-    <div className="bg-white p-6 rounded-md shadow-sm">
-      <h2 className="text-xl font-semibold mb-6">Officer Profile</h2>
-      <p className="text-gray-500">Profile management features will be implemented here.</p>
-    </div>
-  );
-}
-
-function OfficerReports() {
-  return (
-    <div className="bg-white p-6 rounded-md shadow-sm">
-      <h2 className="text-xl font-semibold mb-6">Reports</h2>
-      <p className="text-gray-500">Reporting features will be implemented here.</p>
-    </div>
   );
 }
 
@@ -478,7 +486,12 @@ function AreaComplaints({ complaints, loading, getStatusBadgeColor }) {
               {complaints.map((complaint) => (
                 <tr key={complaint.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {complaint.complaint_id}
+                    <Link 
+                      to={`/complaints/${complaint.id}`}
+                      className="text-primary hover:text-primary-dark hover:underline"
+                    >
+                      {complaint.complaint_id}
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {complaint.title}

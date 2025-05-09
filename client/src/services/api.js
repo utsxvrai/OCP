@@ -120,7 +120,8 @@ export const complaintAPI = {
   updateStatus: (id, status, statusDetails) => api.put(`/complaints/${id}/status`, { status, statusDetails }),
   addUpdate: (id, updateText) => api.post(`/complaints/${id}/updates`, { updateText }),
   submitFeedback: (id, feedback) => api.post(`/complaints/${id}/feedback`, feedback),
-  reopenComplaint: (id) => api.post(`/complaints/${id}/reopen`)
+  reopenComplaint: (id) => api.post(`/complaints/${id}/reopen`),
+  deleteComplaint: (id) => api.delete(`/complaints/${id}`)
 };
 
 export default api; 

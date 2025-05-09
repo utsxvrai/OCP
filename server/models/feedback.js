@@ -15,7 +15,6 @@ class Feedback {
     }
   }
   
-  // Find feedback by complaint ID
   static async findByComplaintId(complaintId) {
     try {
       const [rows] = await pool.query(`

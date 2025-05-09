@@ -290,6 +290,23 @@ class Complaint {
       throw error;
     }
   }
+  
+  // Delete a complaint
+  static async delete(id) {
+    try {
+      // First delete any updates and feedback
+      await pool.execute('DELETE FROM complaint_updates WHERE complaint_id = ?', [id]);
+      await pool.execute('DELETE FROM feedback WHERE complaint_id = ?', [id]);
+      
+      // Then delete the complaint
+      const [result] = await pool.execute('DELETE FROM complaints WHERE id = ?', [id]);
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error deleting complaint:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Complaint; 

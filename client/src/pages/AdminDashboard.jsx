@@ -204,7 +204,12 @@ function AdminHome() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium text-gray-800">{complaint.title}</p>
-                    <p className="text-gray-500 text-sm">{complaint.complaint_id}</p>
+                    <Link
+                      to={`/complaints/${complaint.id}`}
+                      className="text-primary hover:text-primary-dark hover:underline text-sm"
+                    >
+                      {complaint.complaint_id}
+                    </Link>
                   </div>
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor(complaint.status)}`}>
                     {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
