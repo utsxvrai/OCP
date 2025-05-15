@@ -415,4 +415,23 @@ router.post('/:id/reopen', auth, async (req, res) => {
   }
 });
 
+// Get all complaints (for admin)
+router.get('/', auth, async (req, res) => {
+  try {
+    // Only admins and officers can view all complaints
+    if (req.user.role !== 'admin' && req.user.role !== 'officer') {
+      return res.status(403).json({ message: 'Not authorized to view all complaints' });
+    }
+    
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const complaints = await Complaint.getAll(limit, offset);
+    res.json({ complaints });
+  } catch (error) {
+    console.error('Get all complaints error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router; 

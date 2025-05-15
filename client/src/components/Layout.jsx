@@ -43,6 +43,8 @@ function Layout() {
       { name: 'Admin Dashboard', href: '/admin' },
       { name: 'All Complaints', href: '/admin/complaints' },
       { name: 'Manage Officers', href: '/admin/officers' },
+      { name: 'Reports', href: '/admin/reports' },
+      { name: 'Settings', href: '/admin/settings' },
       { name: 'Profile', href: '/profile' },
     ];
   }

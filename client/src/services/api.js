@@ -83,6 +83,9 @@ export const authAPI = {
   getProfile: () => api.get('/auth/me'),
   changePassword: (passwords) => api.post('/auth/change-password', passwords),
   refreshToken: (token) => api.post('/auth/refresh-token', { token }),
+  updateProfile: (userData) => api.put('/auth/profile', userData),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (resetData) => api.post('/auth/reset-password', resetData)
 };
 
 export const userAPI = {
@@ -98,6 +101,10 @@ export const officerAPI = {
   updateAvailability: (availabilityData) => api.put('/officers/availability', availabilityData),
   getAll: () => api.get('/officers'),
   getById: (id) => api.get(`/officers/${id}`),
+  delete: (id) => api.delete(`/officers/${id}`),
+  getAssignedComplaints: () => api.get('/officers/complaints'),
+  getByPinCode: (pinCode) => api.get(`/officers/pin-code/${pinCode}`),
+  getStats: () => api.get('/officers/stats')
 };
 
 export const complaintAPI = {
@@ -121,7 +128,30 @@ export const complaintAPI = {
   addUpdate: (id, updateText) => api.post(`/complaints/${id}/updates`, { updateText }),
   submitFeedback: (id, feedback) => api.post(`/complaints/${id}/feedback`, feedback),
   reopenComplaint: (id) => api.post(`/complaints/${id}/reopen`),
-  deleteComplaint: (id) => api.delete(`/complaints/${id}`)
+  deleteComplaint: (id) => api.delete(`/complaints/${id}`),
+  getByUser: () => api.get('/complaints/user'),
+  getComments: (id) => api.get(`/complaints/${id}/comments`),
+  addComment: (id, comment) => api.post(`/complaints/${id}/comments`, { comment }),
+  assignOfficer: (id, officerId) => api.patch(`/complaints/${id}/assign`, { officerId }),
+  uploadAttachment: (id, formData) => api.post(`/complaints/${id}/attachments`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
+  deleteAttachment: (complaintId, attachmentId) => api.delete(`/complaints/${complaintId}/attachments/${attachmentId}`),
+  getStats: () => api.get('/complaints/stats')
+};
+
+export const adminAPI = {
+  getDashboardStats: () => api.get('/admin/dashboard'),
+  getUsers: () => api.get('/admin/users'),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  getSystemSettings: () => api.get('/admin/settings'),
+  updateSystemSettings: (settingsData) => api.put('/admin/settings', settingsData),
+  generateReport: (reportType, dateRange) => api.post('/admin/reports', { reportType, dateRange }),
+  getAuditLogs: (filters) => api.get('/admin/audit-logs', { params: filters })
 };
 
 export default api; 

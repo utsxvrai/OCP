@@ -11,6 +11,10 @@ import TrackComplaint from './pages/TrackComplaint';
 import OfficerDashboard from './pages/OfficerDashboard';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminComplaints from './pages/AdminComplaints';
+import AdminOfficers from './pages/AdminOfficers';
+import AdminReports from './pages/AdminReports';
+import AdminSettings from './pages/AdminSettings';
 import NotFound from './pages/NotFound';
 import ProjectReport from './pages/ProjectReport';
 
